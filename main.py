@@ -251,7 +251,7 @@ def run_powerplay():
             ZoneInfo("Europe/Rome")
         ).strftime("%d/%m/%Y %H:%M")
 
-        df.at[0, 'Systems'] = len(df)
+        df.at[0, 'Systems'] = str(len(df))
         df.at[0, 'Last Update'] = now
 
     df = df.fillna("")
@@ -459,7 +459,7 @@ def run_match():
         res['Systems'] = ""
 
         if len(res) > 0:
-            res.at[0, 'Systems'] = len(res)
+            res.at[0, 'Systems'] = str(len(res))
 
         res = res.fillna("")
 
