@@ -1,4 +1,3 @@
-```python
 import requests
 import pandas as pd
 import gspread
@@ -560,4 +559,3 @@ if __name__ == "__main__":
     print("\n===================================")
     print("=== AGGIORNAMENTO COMPLETATO ===")
     print("===================================\n")
-```
