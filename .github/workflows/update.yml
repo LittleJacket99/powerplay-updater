@@ -1,3 +1,4 @@
+```yaml
 name: Inara Scraper
 
 on:
@@ -6,9 +7,6 @@ on:
     - cron: '0 18 * * *'
 
   workflow_dispatch:
-
-  repository_dispatch:
-    types: [run-inara]
 
 jobs:
 
@@ -28,9 +26,14 @@ jobs:
 
     - name: Install dependencies
       run: |
+        python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Run script
+    - name: Random startup delay
+      run: sleep $((RANDOM % 120))
+
+    - name: Run scraper
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
       run: python main.py
+```
