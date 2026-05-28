@@ -1,10 +1,9 @@
+```python
 import requests
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 from bs4 import BeautifulSoup
-
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -12,6 +11,8 @@ from zoneinfo import ZoneInfo
 import time
 import os
 import json
+import random
+import cloudscraper
 
 
 # =========================
@@ -33,6 +34,21 @@ HEADERS = {
     "DNT": "1",
     "Upgrade-Insecure-Requests": "1"
 }
+
+
+# =========================
+# CLOUDSCRAPER SESSION
+# =========================
+
+scraper = cloudscraper.create_scraper(
+    browser={
+        "browser": "chrome",
+        "platform": "windows",
+        "mobile": False
+    }
+)
+
+scraper.headers.update(HEADERS)
 
 
 # =========================
@@ -58,20 +74,22 @@ client = gspread.authorize(creds)
 
 def safe_request(url):
 
-    session = requests.Session()
-    session.headers.update(HEADERS)
+    for attempt in range(5):
 
-    for attempt in range(3):
+        wait_before = random.uniform(3, 8)
 
         print("\n==============================")
         print(f"[REQUEST] Tentativo {attempt + 1}")
         print(f"[URL] {url}")
+        print(f"[WAIT BEFORE] {wait_before:.2f}s")
+
+        time.sleep(wait_before)
 
         try:
 
-            r = session.get(
+            r = scraper.get(
                 url,
-                timeout=30,
+                timeout=60,
                 allow_redirects=True
             )
 
@@ -85,17 +103,32 @@ def safe_request(url):
 
             print("==============================\n")
 
-            if (
-                r.status_code == 200
-                and "something happened" not in r.text.lower()
-            ):
+            blocked = (
+                "something happened" in r.text.lower()
+                or "access denied" in r.text.lower()
+                or "captcha" in r.text.lower()
+            )
+
+            if r.status_code == 200 and not blocked:
+
                 print("[REQUEST SUCCESS]")
                 return r
 
-        except Exception as e:
-            print(f"[REQUEST ERROR] {e}")
+            retry_wait = (attempt + 1) * 15
 
-        time.sleep(5)
+            print("[REQUEST BLOCKED]")
+            print(f"[RETRY IN] {retry_wait}s")
+
+            time.sleep(retry_wait)
+
+        except Exception as e:
+
+            retry_wait = (attempt + 1) * 15
+
+            print(f"[REQUEST ERROR] {e}")
+            print(f"[RETRY IN] {retry_wait}s")
+
+            time.sleep(retry_wait)
 
     print("[REQUEST FAILED]")
     return None
@@ -190,23 +223,23 @@ def run_powerplay():
             return rows
 
         except Exception as e:
+
             print(f"[PP] Errore {label}: {e}")
             return []
 
-    with ThreadPoolExecutor(max_workers=3) as ex:
+    for label, url in URLS_POWERPLAY.items():
 
-        futures = [
-            ex.submit(fetch, l, u)
-            for l, u in URLS_POWERPLAY.items()
-        ]
+        result = fetch(label, url)
 
-        for f in as_completed(futures):
+        print(f"[SEQUENTIAL] Ricevute {len(result)} righe")
 
-            result = f.result()
+        all_data.extend(result)
 
-            print(f"[THREAD] Ricevute {len(result)} righe")
+        sleep_between = random.uniform(10, 20)
 
-            all_data.extend(result)
+        print(f"[WAIT NEXT REQUEST] {sleep_between:.2f}s")
+
+        time.sleep(sleep_between)
 
     print(f"[POWERPLAY] Totale righe raccolte: {len(all_data)}")
 
@@ -497,11 +530,29 @@ if __name__ == "__main__":
     print("=== AVVIO AGGIORNAMENTO DATI ===")
     print("===================================\n")
 
+    startup_delay = random.uniform(5, 20)
+
+    print(f"[STARTUP DELAY] {startup_delay:.2f}s")
+
+    time.sleep(startup_delay)
+
     res_pp = run_powerplay()
     print(res_pp)
 
+    pause_between = random.uniform(15, 30)
+
+    print(f"[WAIT EXCP] {pause_between:.2f}s")
+
+    time.sleep(pause_between)
+
     res_ex = run_excp()
     print(res_ex)
+
+    pause_between = random.uniform(15, 30)
+
+    print(f"[WAIT MATCH] {pause_between:.2f}s")
+
+    time.sleep(pause_between)
 
     res_mt = run_match()
     print(res_mt)
@@ -509,4 +560,4 @@ if __name__ == "__main__":
     print("\n===================================")
     print("=== AGGIORNAMENTO COMPLETATO ===")
     print("===================================\n")
-
+```
