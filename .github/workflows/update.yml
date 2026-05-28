@@ -1,4 +1,4 @@
-```yaml
+
 name: Inara Scraper
 
 on:
@@ -36,4 +36,4 @@ jobs:
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
       run: python main.py
-```
+
