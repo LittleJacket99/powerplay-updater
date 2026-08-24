@@ -13,6 +13,8 @@ import json
 import random
 import cloudscraper
 
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJEP-D3C3DiOy-elE_Q9Jaq01D7g-MJtc3vc1Vvd2cdGABhQF95r98D-Lw95J0SWad/exec"
+
 
 # =========================
 # CONFIGURAZIONE
@@ -51,21 +53,39 @@ scraper.headers.update(HEADERS)
 
 
 # =========================
-# GOOGLE AUTH
+# GOOGLE SHEETS - APPS SCRIPT
 # =========================
 
-creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS"])
+def write_to_sheet(sheet_name, values):
 
-creds = Credentials.from_service_account_info(
-    creds_dict,
-    scopes=[
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
-)
+    payload = {
+        "action": "write",
+        "sheet": sheet_name,
+        "values": values
+    }
 
-client = gspread.authorize(creds)
+    print(f"[APPS SCRIPT] Invio dati al foglio: {sheet_name}")
+    print(f"[APPS SCRIPT] Righe: {len(values)}")
 
+    response = requests.post(
+        APPS_SCRIPT_URL,
+        json=payload,
+        timeout=60
+    )
+
+    print(f"[APPS SCRIPT] HTTP: {response.status_code}")
+    print(f"[APPS SCRIPT] Risposta: {response.text}")
+
+    response.raise_for_status()
+
+    result = response.json()
+
+    if result.get("status") != "ok":
+        raise Exception(
+            f"Apps Script error: {result.get('message', 'Errore sconosciuto')}"
+        )
+
+    return result
 
 # =========================
 # REQUEST SICURA
@@ -288,21 +308,15 @@ def run_powerplay():
 
     df = df.fillna("")
 
-    print("[POWERPLAY] Connessione Google Sheets")
+    print("[POWERPLAY] Invio dati ad Apps Script")
 
-    sheet = client.open_by_key(
-        SPREADSHEET_ID
-    ).worksheet(SHEET_POWERPLAY)
+    values = [
+         df.columns.tolist()
+    ] + df.values.tolist()
 
-    print("[POWERPLAY] Clear sheet")
-
-    sheet.clear()
-
-    print("[POWERPLAY] Upload dati")
-
-    sheet.update(
-        [df.columns.tolist()] + df.values.tolist(),
-        'A1'
+    write_to_sheet(
+         SHEET_POWERPLAY,
+         values
     )
 
     print("[POWERPLAY] COMPLETATO")
