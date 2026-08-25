@@ -418,14 +418,12 @@ def run_excp():
             else:
                 write.append([d[0], "", ""])
 
-        print("[EXCP] Upload Google Sheets")
+        print("[EXCP] Invio dati ad Apps Script")
 
-        sheet = client.open_by_key(
-            SPREADSHEET_ID
-        ).worksheet(SHEET_EXCP)
-
-        sheet.clear()
-        sheet.update(write, 'A1')
+        write_to_sheet(
+            SHEET_EXCP,
+            write
+        )
 
         print("[EXCP] COMPLETATO")
 
@@ -436,7 +434,6 @@ def run_excp():
         print(f"[EXCP] Errore: {e}")
 
         return "❌ Errore EXCP"
-
 
 # =========================
 # MATCH
