@@ -1,6 +1,5 @@
 requests
 beautifulsoup4
 pandas
-Flask
 cloudscraper
 lxml
