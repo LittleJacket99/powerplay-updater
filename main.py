@@ -1,15 +1,11 @@
 import requests
 import pandas as pd
-import gspread
-from google.oauth2.service_account import Credentials
 from bs4 import BeautifulSoup
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import time
-import os
-import json
 import random
 import cloudscraper
 
@@ -20,7 +16,6 @@ APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJEP-D3C3DiOy-elE_Q9
 # CONFIGURAZIONE
 # =========================
 
-SPREADSHEET_ID = "1pzjZZUS_bJRGDXCzLCPoTjf1AXXlb1PR55H9YcYuzi4"
 
 HEADERS = {
     "User-Agent": (
