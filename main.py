@@ -450,78 +450,39 @@ def run_match():
 
     try:
 
-        df_p = pd.DataFrame(
-            client.open_by_key(
-                SPREADSHEET_ID
-            ).worksheet(
-                SHEET_POWERPLAY
-            ).get_all_records()
+        print("[MATCH] Richiesta match ad Apps Script")
+
+        payload = {
+            "action": "match"
+        }
+
+        response = requests.post(
+            APPS_SCRIPT_URL,
+            json=payload,
+            timeout=60
         )
 
-        print(f"[MATCH] Righe Powerplay: {len(df_p)}")
+        print(f"[MATCH] HTTP: {response.status_code}")
+        print(f"[MATCH] Risposta: {response.text}")
 
-        df_e = pd.DataFrame(
-            client.open_by_key(
-                SPREADSHEET_ID
-            ).worksheet(
-                SHEET_EXCP
-            ).get_all_records()
-        )
+        response.raise_for_status()
 
-        print(f"[MATCH] Righe EXCP: {len(df_e)}")
+        result = response.json()
 
-        for c in [' ', 'Systems', '']:
+        if result.get("status") != "ok":
+            raise Exception(
+                result.get(
+                    "message",
+                    "Errore sconosciuto da Apps Script"
+                )
+            )
 
-            if c in df_p.columns:
-                df_p = df_p.drop(columns=[c])
+        matches = result.get("matches", 0)
 
-            if c in df_e.columns:
-                df_e = df_e.drop(columns=[c])
-
-        df_p = df_p.rename(
-            columns={
-                next(
-                    c for c in df_p.columns
-                    if 'system' in c.lower()
-                ): 'Star system'
-            }
-        )
-
-        print("[MATCH] Merge in corso")
-
-        res = pd.merge(
-            df_p,
-            df_e,
-            on='Star system',
-            how='inner'
-        ).fillna("")
-
-        print(f"[MATCH] Match trovati: {len(res)}")
-
-        res[' '] = ""
-        res['Systems'] = ""
-
-        if len(res) > 0:
-            res.at[0, 'Systems'] = str(len(res))
-
-        res = res.fillna("")
-
-        print("[MATCH] Upload Google Sheets")
-
-        sheet = client.open_by_key(
-            SPREADSHEET_ID
-        ).worksheet(SHEET_MATCH)
-
-        sheet.clear()
-
-        sheet.update(
-            [res.columns.tolist()] + res.values.tolist(),
-            'A1'
-        )
-
+        print(f"[MATCH] Match trovati: {matches}")
         print("[MATCH] COMPLETATO")
 
-        return f"✅ Incrocio: {len(res)} sistemi"
+        return f"✅ Incrocio: {matches} sistemi"
 
     except Exception as e:
 
