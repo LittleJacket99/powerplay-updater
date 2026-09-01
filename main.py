@@ -1630,11 +1630,18 @@ def write_excp(
     systems,
     source,
 ):
+    now_rome = datetime.now(
+        ZoneInfo("Europe/Rome")
+    ).strftime(
+        "%d/%m/%Y %H:%M"
+    )
+
     values = [
         [
             "Star system",
             "",
             "Controlled Systems",
+            "Last Update",
         ]
     ]
 
@@ -1644,11 +1651,14 @@ def write_excp(
         values.append(
             [
                 system,
-
                 "",
-
                 (
                     len(systems)
+                    if index == 0
+                    else ""
+                ),
+                (
+                    now_rome
                     if index == 0
                     else ""
                 ),
@@ -1657,21 +1667,17 @@ def write_excp(
 
     post_apps_script(
         {
-            "action":
-                "write",
-
-            "sheet":
-                "EXCP",
-
-            "values":
-                values,
+            "action": "write",
+            "sheet": "EXCP",
+            "values": values,
         }
     )
 
     print(
         "[EXCP] Scritti "
         f"{len(systems)} sistemi "
-        f"| SOURCE={source}"
+        f"| SOURCE={source} "
+        f"| Last Update={now_rome}"
     )
 
 
