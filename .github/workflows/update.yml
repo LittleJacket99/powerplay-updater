@@ -8,11 +8,9 @@ on:
 
 jobs:
   run-script:
-
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v5
 
@@ -30,6 +28,4 @@ jobs:
         run: sleep $((RANDOM % 600))
 
       - name: Run scraper
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: python main.py
