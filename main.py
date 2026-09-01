@@ -40,7 +40,7 @@ VAULT_EXCP_BATCH_SIZE = 100
 VAULT_MIN_BATCH_SIZE = 10
 
 VAULT_MAX_RETRIES = 3
-VAULT_REQUEST_DELAY = 0.25
+VAULT_REQUEST_DELAY = 1.5
 
 
 # ============================================================
