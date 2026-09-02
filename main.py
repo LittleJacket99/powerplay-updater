@@ -40,6 +40,8 @@ VAULT_EXCP_BATCH_SIZE = 100
 VAULT_MIN_BATCH_SIZE = 10
 
 VAULT_MAX_RETRIES = 3
+
+# Hai scelto 1.5 secondi.
 VAULT_REQUEST_DELAY = 1.5
 
 
@@ -76,7 +78,7 @@ HEADERS = {
 
 
 # ============================================================
-# GRAPHQL - MAHON OCCUPIED
+# GRAPHQL - MAHON
 # ============================================================
 
 VAULT_MAHON_QUERY = """
@@ -104,7 +106,7 @@ query MahonSystems($first: Int!, $offset: Int!) {
 
 
 # ============================================================
-# GRAPHQL - MAHON EXPANSION / CONTESTED
+# GRAPHQL - MAHON CONFLICTS
 # ============================================================
 
 VAULT_CONFLICT_QUERY = """
@@ -161,7 +163,7 @@ query ExcpSystems(
 
 
 # ============================================================
-# GENERIC HELPERS
+# HELPERS
 # ============================================================
 
 def clean_text(value):
@@ -313,6 +315,12 @@ def reduce_batch_size(current_batch):
     )
 
 
+def now_rome_string():
+    return datetime.now(
+        ZoneInfo("Europe/Rome")
+    ).strftime("%d/%m/%Y %H:%M")
+
+
 # ============================================================
 # APPS SCRIPT
 # ============================================================
@@ -382,7 +390,7 @@ def vault_post(query, variables):
                 json=payload,
                 headers={
                     "Content-Type": "application/json",
-                    "User-Agent": "Elite-Mahon-Sheets-Updater/2.0",
+                    "User-Agent": "Elite-Mahon-Sheets-Updater/2.1",
                 },
                 timeout=45,
             )
@@ -814,8 +822,7 @@ def fetch_powerplay_from_vault():
         conflicts
     )
 
-    # Gli stati occupied hanno priorità
-    # su eventuali conflict obsoleti.
+    # Gli stati occupied hanno priorità.
     combined.update(
         occupied
     )
@@ -826,7 +833,7 @@ def fetch_powerplay_from_vault():
 
     rows.sort(
         key=lambda row:
-        row[0].lower()
+            row[0].lower()
     )
 
     if (
@@ -1156,8 +1163,7 @@ def parse_inara_powerplay_page(
 
     if table is None:
         raise RuntimeError(
-            "Tabella Powerplay "
-            "Inara non trovata"
+            "Tabella Powerplay Inara non trovata"
         )
 
     headers = [
@@ -1463,8 +1469,7 @@ def fetch_excp_from_inara():
         star_system_index is None
     ):
         raise RuntimeError(
-            "Tabella EXCP Inara "
-            "non trovata"
+            "Tabella EXCP Inara non trovata"
         )
 
     systems = []
@@ -1527,8 +1532,7 @@ def fetch_excp_from_inara():
 
     if not systems:
         raise RuntimeError(
-            "EXCP Inara: "
-            "nessun sistema trovato"
+            "EXCP Inara: nessun sistema trovato"
         )
 
     print(
@@ -1547,13 +1551,7 @@ def write_mahon(
     rows,
     source,
 ):
-    now_rome = datetime.now(
-        ZoneInfo(
-            "Europe/Rome"
-        )
-    ).strftime(
-        "%d/%m/%Y %H:%M"
-    )
+    now_rome = now_rome_string()
 
     values = [
         [
@@ -1618,7 +1616,8 @@ def write_mahon(
     print(
         "[Mahon] Scritti "
         f"{len(rows)} sistemi "
-        f"| SOURCE={source}"
+        f"| SOURCE={source} "
+        f"| Last Update={now_rome}"
     )
 
 
@@ -1630,11 +1629,7 @@ def write_excp(
     systems,
     source,
 ):
-    now_rome = datetime.now(
-        ZoneInfo("Europe/Rome")
-    ).strftime(
-        "%d/%m/%Y %H:%M"
-    )
+    now_rome = now_rome_string()
 
     values = [
         [
@@ -1651,12 +1646,15 @@ def write_excp(
         values.append(
             [
                 system,
+
                 "",
+
                 (
                     len(systems)
                     if index == 0
                     else ""
                 ),
+
                 (
                     now_rome
                     if index == 0
@@ -1667,9 +1665,14 @@ def write_excp(
 
     post_apps_script(
         {
-            "action": "write",
-            "sheet": "EXCP",
-            "values": values,
+            "action":
+                "write",
+
+            "sheet":
+                "EXCP",
+
+            "values":
+                values,
         }
     )
 
@@ -1700,8 +1703,7 @@ def run_powerplay():
         print("!" * 70)
 
         print(
-            "[MAHON] "
-            "VAULT NON UTILIZZABILE"
+            "[MAHON] VAULT NON UTILIZZABILE"
         )
 
         print(
@@ -1710,8 +1712,7 @@ def run_powerplay():
         )
 
         print(
-            "[MAHON] Passaggio "
-            "automatico a Inara"
+            "[MAHON] Passaggio automatico a Inara"
         )
 
         print("!" * 70)
@@ -1731,11 +1732,11 @@ def run_powerplay():
     )
 
     return {
-        "source":
-            source,
+        "source": source,
+        "systems": len(rows),
 
-        "systems":
-            len(rows),
+        # Serve al match Python
+        "rows": rows,
     }
 
 
@@ -1758,8 +1759,7 @@ def run_excp():
         print("!" * 70)
 
         print(
-            "[EXCP] "
-            "VAULT NON UTILIZZABILE"
+            "[EXCP] VAULT NON UTILIZZABILE"
         )
 
         print(
@@ -1768,8 +1768,7 @@ def run_excp():
         )
 
         print(
-            "[EXCP] Passaggio "
-            "automatico a Inara"
+            "[EXCP] Passaggio automatico a Inara"
         )
 
         print("!" * 70)
@@ -1789,48 +1788,133 @@ def run_excp():
     )
 
     return {
-        "source":
-            source,
+        "source": source,
+        "systems": len(systems),
 
-        "systems":
-            len(systems),
+        # Serve al match Python
+        "systems_list": systems,
     }
 
 
 # ============================================================
-# MATCH - EXCP_Mahon
+# MATCH PYTHON - EXCP_Mahon
 # ============================================================
 
-def run_match():
+def run_match(
+    mahon_rows,
+    excp_systems,
+):
     print()
     print("=" * 70)
-
     print(
-        "[MATCH] EXCP ∩ MAHON"
+        "[MATCH] EXCP ∩ MAHON - PYTHON"
     )
-
     print("=" * 70)
 
-    result = (
-        post_apps_script(
-            {
-                "action":
-                    "match",
-            }
+    excp_set = {
+        clean_text(system).lower()
+        for system in excp_systems
+        if clean_text(system)
+    }
+
+    matched_rows = []
+
+    for row in mahon_rows:
+        if not row:
+            continue
+
+        system_name = clean_text(
+            row[0]
         )
+
+        if not system_name:
+            continue
+
+        if (
+            system_name.lower()
+            in excp_set
+        ):
+            matched_rows.append(
+                list(row)
+            )
+
+    matched_rows.sort(
+        key=lambda row:
+            row[0].lower()
     )
 
-    matches = result.get(
-        "matches",
-        0,
+    now_rome = now_rome_string()
+
+    values = [
+        [
+            "Star system",
+            "State",
+            "Under",
+            "Reinf",
+            "Progress",
+            "Updated",
+            " ",
+            "Systems",
+            "Last Update",
+        ]
+    ]
+
+    for index, row in enumerate(
+        matched_rows
+    ):
+        output_row = list(
+            row
+        )
+
+        # Spacer
+        output_row.append(
+            ""
+        )
+
+        if index == 0:
+            output_row.append(
+                len(matched_rows)
+            )
+
+            output_row.append(
+                now_rome
+            )
+
+        else:
+            output_row.append(
+                ""
+            )
+
+            output_row.append(
+                ""
+            )
+
+        values.append(
+            output_row
+        )
+
+    post_apps_script(
+        {
+            "action":
+                "write",
+
+            "sheet":
+                "EXCP_Mahon",
+
+            "values":
+                values,
+        }
     )
 
     print(
         "[MATCH] "
-        f"{matches} sistemi"
+        f"{len(matched_rows)} sistemi "
+        f"| Last Update={now_rome}"
     )
 
-    return matches
+    return len(
+        matched_rows
+    )
 
 
 # ============================================================
@@ -1848,7 +1932,10 @@ def main():
 
     start = time.time()
 
+    # ========================================================
     # 1. MAHON
+    # ========================================================
+
     powerplay_result = (
         run_powerplay()
     )
@@ -1860,7 +1947,10 @@ def main():
         )
     )
 
+    # ========================================================
     # 2. EXCP
+    # ========================================================
+
     excp_result = (
         run_excp()
     )
@@ -1872,15 +1962,28 @@ def main():
         )
     )
 
-    # 3. MATCH
-    matches = (
-        run_match()
+    # ========================================================
+    # 3. MATCH LOCALE PYTHON
+    # ========================================================
+
+    matches = run_match(
+        powerplay_result[
+            "rows"
+        ],
+
+        excp_result[
+            "systems_list"
+        ],
     )
 
     elapsed = (
         time.time()
         - start
     )
+
+    # ========================================================
+    # SUMMARY
+    # ========================================================
 
     print()
     print("=" * 70)
