@@ -1,3 +1,4 @@
+import os
 import math
 import time
 from datetime import datetime, timezone
@@ -12,11 +13,12 @@ import requests
 
 VAULT_URL = "https://vault.elitehub.eu/graphql"
 
-APPS_SCRIPT_URL = (
-    "https://script.google.com/macros/s/"
-    "AKfycbxJEP-D3C3DiOy-elE_Q9Jaq01D7g-MJtc3vc1Vvd2cdGABhQF95r98D-Lw95J0SWad/"
-    "exec"
-)
+APPS_SCRIPT_URL = os.environ.get("APPS_SCRIPT_URL")
+
+if not APPS_SCRIPT_URL:
+    raise RuntimeError(
+        "Missing APPS_SCRIPT_URL environment variable"
+    )
 
 # Expanders Corp
 EXCP_FACTION_ID = "35b7ec6b-9465-4c62-bc5b-110ee790967a"
